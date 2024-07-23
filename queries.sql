@@ -47,3 +47,60 @@ order by number_of_week, seller
 select seller, day_of_week, income
  from tab;
 --создается вспомогательный запрос для правильной сортировки по дням недели, подсчитывается прибыль
+
+
+--6 шаг
+select
+    '16-25' as age_category,
+    count(customer_id) as age_count
+from customers
+where age between 16 and 25
+group by age_category
+union 
+select
+    '26-40' as age_category,
+    count(customer_id) as age_count
+from customers
+where age between 26 and 40
+group by age_category
+union 
+select
+    '40+' as age_category,
+    count(customer_id) as age_count
+from customers
+where age > 40
+group by age_category
+order by age_category;
+--вычисление кол-ва покупателей в возрастной группе, объединение данных из одной таблицы с помощью UNION
+
+
+select 
+    to_char(sale_date, 'yyyy-mm') as selling_month,
+    count(distinct(customer_id)) as total_customer,
+    floor(sum(quantity*price)) as income
+from sales s
+inner join products p on s.product_id = p.product_id 
+group by selling_month
+order by selling_month;
+--подсчет уникальных покупателей и выручки в каждом месяце
+
+
+with tab as(
+select 
+    distinct(concat(c.first_name, ' ', c.last_name)) as customer,
+    first_value(sale_date) over(partition by c.customer_id) as sale_date,
+    first_value((concat(e.first_name, ' ', e.last_name))) over(partition by c.customer_id order by sale_date) as seller,
+    c.customer_id
+from customers c 
+inner join sales s on c.customer_id = s.customer_id 
+inner join employees e on s.sales_person_id = e.employee_id
+inner join products p on s.product_id = p.product_id 
+where price = 0
+group by customer, sale_date, c.customer_id, e.first_name, e.last_name
+order by c.customer_id
+)
+
+select customer, sale_date, seller
+from tab;
+--нахождение покупателей, попавших в акцию, вспомогательный запрос необходим для сортировки по id покупателей, 
+не входящего в итоговую таблицу, также необходимо определить самую первую покупку с помощью оконных функций
