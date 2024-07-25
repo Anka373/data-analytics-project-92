@@ -9,8 +9,8 @@ select
     concat(e.first_name, ' ', e.last_name) as seller,
     count(s.sales_person_id) as operations,
     floor(sum(s.quantity * p.price)) as income
-from employees as e
-inner join sales as s on e.employee_id = s.sales_person_id
+from sales as s
+inner join employees as e on s.sales_person_id = e.employee_id
 inner join products as p on s.product_id = p.product_id
 group by seller
 order by income desc limit 10;
@@ -22,8 +22,8 @@ order by income desc limit 10;
 select
     concat(e.first_name, ' ', e.last_name) as seller,
     floor(avg(s.quantity * p.price)) as average_income
-from employees as e
-inner join sales as s on e.employee_id = s.sales_person_id
+from sales as s
+inner join employees as e on s.sales_person_id = e.employee_id
 inner join products as p on s.product_id = p.product_id
 group by seller
 having
@@ -37,52 +37,31 @@ order by average_income;
 через оператор HAVING с общей средней выручкой*/
 
 
-with tab as (
-    select
-        concat(e.first_name, ' ', e.last_name) as seller,
-        to_char(s.sale_date, 'day') as day_of_week,
-        floor(sum(s.quantity * p.price)) as income,
-        extract(isodow from s.sale_date) as number_of_week
-    from employees as e
-    inner join sales as s on e.employee_id = s.sales_person_id
-    inner join products as p on s.product_id = p.product_id
-    group by seller, day_of_week, number_of_week
-    order by number_of_week, seller
-)
-
 select
-    seller,
-    day_of_week,
-    income
-from tab;
-/*создается вспомогательный запрос для правильной
-сортировки по дням недели, подсчитывается прибыль*/
+    concat(e.first_name, ' ', e.last_name) as seller,
+    to_char(s.sale_date, 'day') as day_of_week,
+    floor(sum(s.quantity * p.price)) as income
+from employees as e
+inner join sales as s on e.employee_id = s.sales_person_id
+inner join products as p on s.product_id = p.product_id
+group by seller, day_of_week, extract(isodow from s.sale_date)
+order by extract(isodow from s.sale_date), seller;
+/*находит день недели и выручку по нему на каждого продавца*/
 
 
 --6 шаг
 select
-    '16-25' as age_category,
+    case
+        when age between 16 and 25 then '16-25'
+        when age between 26 and 40 then '26-40'
+        when age > 40 then '40+'
+    end as age_category,
     count(customer_id) as age_count
 from customers
-where age between 16 and 25
-group by age_category
-union
-select
-    '26-40' as age_category,
-    count(customer_id) as age_count
-from customers
-where age between 26 and 40
-group by age_category
-union
-select
-    '40+' as age_category,
-    count(customer_id) as age_count
-from customers
-where age > 40
 group by age_category
 order by age_category;
-/*вычисление кол-ва покупателей в возрастной группе,
-объединение данных из одной таблицы с помощью UNION*/
+/*вычисление кол-ва покупателей в возрастной группе
+с помощью оператора CASE*/
 
 
 select
@@ -96,36 +75,17 @@ order by selling_month;
 --подсчет уникальных покупателей и выручки в каждом месяце
 
 
-with tab as (
-    select
-        s.sale_date,
-        concat(c.first_name, ' ', c.last_name) as customer,
-        concat(e.first_name, ' ', e.last_name)
-        as seller
-    from customers as c
-    inner join sales as s on c.customer_id = s.customer_id
-    inner join employees as e on s.sales_person_id = e.employee_id
-    inner join products as p on s.product_id = p.product_id
-    where p.price = 0
-    order by c.customer_id
-),
-
-rw as (
-    select
-        customer,
-        sale_date,
-        seller,
-        row_number() over (partition by customer order by sale_date) as rwn
-    from tab
-)
-
-select
-    customer,
-    sale_date,
-    seller
-from rw
-where rwn = 1;
-/*нахождение покупателей, попавших в акцию,
-вспомогательный запрос необходим для сортировки по id покупателей,
-не входящего в итоговую таблицу, также необходимо
-определить самую первую покупку с помощью оконных функций*/
+select distinct
+    concat(c.first_name, ' ', c.last_name)
+    as customer,
+    first_value(s.sale_date)
+        over (partition by c.customer_id order by s.sale_date)
+    as sale_date,
+    concat(e.first_name, ' ', e.last_name) as seller
+from customers as c
+inner join sales as s on c.customer_id = s.customer_id
+inner join employees as e on s.sales_person_id = e.employee_id
+inner join products as p on s.product_id = p.product_id
+where p.price = 0
+order by customer, sale_date, seller
+/*нахождение первых продаж покупателям в ходе акции*/
