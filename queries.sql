@@ -98,11 +98,9 @@ order by selling_month;
 
 with tab as (
     select
-        c.customer_id,
-        distinct concat(c.first_name, ' ', c.last_name) as customer,
-        first_value(s.sale_date) over (partition by c.customer_id) as sale_date,
-        first_value((concat(e.first_name, ' ', e.last_name)))
-            over (partition by c.customer_id order by sale_date)
+        s.sale_date,
+        concat(c.first_name, ' ', c.last_name) as customer,
+        concat(e.first_name, ' ', e.last_name)
         as seller
     from customers as c
     inner join sales as s on c.customer_id = s.customer_id
@@ -110,13 +108,23 @@ with tab as (
     inner join products as p on s.product_id = p.product_id
     where p.price = 0
     order by c.customer_id
+),
+
+rw as (
+    select
+        customer,
+        sale_date,
+        seller,
+        row_number() over (partition by customer order by sale_date) as rwn
+    from tab
 )
 
 select
     customer,
     sale_date,
     seller
-from tab;
+from rw
+where rwn = 1;
 /*нахождение покупателей, попавших в акцию,
 вспомогательный запрос необходим для сортировки по id покупателей,
 не входящего в итоговую таблицу, также необходимо
