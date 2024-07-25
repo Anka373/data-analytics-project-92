@@ -6,7 +6,7 @@ from customers;
 
 --5 шаг
 select
-    concat(first_name, last_name) as seller,
+    concat(first_name, ' ', last_name) as seller,
     count(sales_person_id) as operations,
    floor(sum(quantity*price)) as income
 from employees e 
@@ -18,7 +18,7 @@ order by income desc limit 10;
 
 
 select
-    concat(first_name, last_name) as seller,
+    concat(first_name, ' ',last_name) as seller,
     floor(avg(quantity*price)) as average_income
   from employees e 
   inner join sales s on e.employee_id = s.sales_person_id
@@ -33,7 +33,7 @@ select
 
 with tab as(
 select
-    concat(first_name, last_name) as seller,
+    concat(first_name, ' ',last_name) as seller,
     to_char(sale_date, 'day') as day_of_week,
     floor(sum(quantity*price)) as income,
     extract (isodow from s.sale_date) as number_of_week
