@@ -92,9 +92,9 @@ order by selling_month;
 
 
 with tab as (
-    select distinct
+    select
         c.customer_id,
-        concat(c.first_name, ' ', c.last_name) as customer,
+        distinct concat(c.first_name, ' ', c.last_name) as customer,
         first_value(s.sale_date) over (partition by c.customer_id) as sale_date,
         first_value((concat(e.first_name, ' ', e.last_name)))
             over (partition by c.customer_id order by sale_date)
