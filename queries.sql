@@ -86,6 +86,8 @@ from customers as c
 inner join sales as s on c.customer_id = s.customer_id
 inner join employees as e on s.sales_person_id = e.employee_id
 inner join products as p on s.product_id = p.product_id
+/*присоединение таблицы products необходимо для фильтрации
+по нулевой цене*/
 where p.price = 0
 order by customer, sale_date, seller
 /*нахождение первых продаж покупателям в ходе акции*/
