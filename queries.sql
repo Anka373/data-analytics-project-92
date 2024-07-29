@@ -75,19 +75,16 @@ order by selling_month;
 --подсчет уникальных покупателей и выручки в каждом месяце
 
 
-select distinct
+select distinct on
+(concat(c.first_name, ' ', c.last_name))
+    s.sale_date,
     concat(c.first_name, ' ', c.last_name)
     as customer,
-    first_value(s.sale_date)
-        over (partition by c.customer_id order by s.sale_date)
-    as sale_date,
     concat(e.first_name, ' ', e.last_name) as seller
 from customers as c
 inner join sales as s on c.customer_id = s.customer_id
 inner join employees as e on s.sales_person_id = e.employee_id
 inner join products as p on s.product_id = p.product_id
-/*присоединение таблицы products необходимо для фильтрации
-по нулевой цене*/
 where p.price = 0
-order by customer, sale_date, seller
-/*нахождение первых продаж покупателям в ходе акции*/
+order by customer, s.sale_date
+/*нахождение первых покупок покупателей в ходе акции*/
